@@ -1,6 +1,11 @@
 schemaVersion: 2.1.0
 metadata:
   name: nodejs-web-app
+projects:
+  - name: TestRepo002
+    git:
+      remotes:
+        origin: "https://github.com/tonytbn/TestRepo001.git"
 components:
   - name: tools
     container:
