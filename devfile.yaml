@@ -1,59 +1,55 @@
-schemaVersion: 2.0.0
+schemaVersion: 2.1.0
 metadata:
-  name: nodejs
-  version: 1.0.0
-  attributes:
-    alpha.build-context: src
-    alpha.build-dockerfile: Dockerfile
+  name: nodejs-web-app
 components:
-  - name: buildguidance
-    attributes:
-      tool: console-import
+  - name: tools
     container:
-      image: buildguidanceimage-placeholder
-      memoryLimit: 1024Mi
+      image: quay.io/devfile/universal-developer-image:ubi8-0e189d9
       endpoints:
-        - name: http-3001
-          targetPort: 3001
-  - name: runtime
-    container:
-      image: registry.access.redhat.com/ubi8/nodejs-12:1-45
-      memoryLimit: 1024Mi
-      mountSources: true
-      sourceMapping: /project
-      endpoints:
-        - name: http-3000
+        - exposure: public
+          name: nodejs
+          protocol: http
           targetPort: 3000
+      memoryLimit: 1G
+      mountSources: true
+
 commands:
-  - id: install
+  - id: install-dependencies
     exec:
-      component: runtime
-      commandLine: npm install
-      workingDir: /project/src
+      label: "Install dependencies"
+      component: tools
+      workingDir: ${PROJECT_SOURCE}/app
+      commandLine: "npm install"
       group:
         kind: build
         isDefault: true
-  - id: run
+
+  - id: run-application
     exec:
-      component: runtime
-      commandLine: npm start
-      workingDir: /project/src
+      label: "Run web application"
+      component: tools
+      workingDir: ${PROJECT_SOURCE}/app
+      commandLine: "nodemon app.js"
       group:
         kind: run
-        isDefault: true
+
   - id: debug
     exec:
-      component: runtime
-      commandLine: npm run debug
-      workingDir: /project/src
+      label: "Run web application (debugging enabled)"
+      component: tools
+      workingDir: ${PROJECT_SOURCE}/app
+      commandLine: "nodemon --inspect app.js"
       group:
         kind: debug
         isDefault: true
-  - id: test
+
+  - id: stop-application
     exec:
-      component: runtime
-      commandLine: npm test
-      workingDir: /project/src
+      label: "Stop web application"
+      component: tools
+      commandLine: >-
+          node_server_pids=$(pgrep -fx '.*nodemon (--inspect )?app.js' | tr "\\n" " ") &&
+          echo "Stopping node server with PIDs: ${node_server_pids}" && 
+          kill -15 ${node_server_pids} &>/dev/null && echo 'Done.'
       group:
-        kind: test
-        isDefault: true
+        kind: run
